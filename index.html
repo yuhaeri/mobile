@@ -1,0 +1,229 @@
+<html>
+    <head>
+        <style>
+        body{background:indigo;}
+        #progressbar{
+            position:relative;
+            width:100%;
+            height: 30px;
+            background-color: indianred;
+        }
+        #bar{
+            position: absolute;
+            width:1%;
+            height: 100%;
+            background-color: orangered;
+        }
+        #label{
+            text-align: center;
+            line-height: 30px;
+            color:white;
+        }
+        #board{
+            width: 100%;
+            height: 450px;
+            background-color: lightpink;
+        }
+        #trash{
+            position: absolute;
+            bottom: 25%;
+            right: 15%;
+        }
+        #list{
+            width:60%;
+            height: 100%;
+            float:left;
+        }
+        #preview{
+            width: 40%;
+            height: 100%;
+            display: inline-block;
+            background-color:mediumturquoise;
+            text-align: center;
+        }
+        #new{
+            position: absolute;
+            top:30%;
+            right:1%;
+        }
+        </style>
+    </head>
+    <body>
+        <h1 style="text-align:center; color:white;">TO DO LIST</h1>
+        <div id="progressbar">
+            <div id="bar">
+                <div id="label">0%</div>
+            </div>
+        </div>
+
+            <h3 id="date"></h3>
+
+        <div id="board">
+            <div id="list">
+                <table width="100%" border="2" id="listtable" >
+                    <tr>
+                        <th width="5%">순번</th>
+                        <th width="90%">할 일</th>
+                        <th width="5%">완료</th>
+                    </tr>
+                </table>
+
+            </div>
+            <div id="preview">
+
+                <div id="new">
+                    <h2 style="text-align">추가하기</h2>
+                    <input type="text" id="newadd" placeholder="할 일 추가" size="80" style="height:30;" onkeypress="if(event.keyCode==13){add();}"/>
+                    <input type="button" value="추가" onclick="add();">
+                </div>
+                <div id="trash">
+                    <img src="trash1.png" ondrop="drop(event)"ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
+        <script>
+        function allowDrop(ev){
+            ev.preventDefault();
+        }
+        function drag(ev){
+            ev.dataTransfer.setDat("text",ev.target.id);
+        }
+        function drop(ev){
+            ev.preventDefault();
+            var data=ev.dataTransfer.getData("text");
+            del();
+        }
+        //달성률
+        var table=document.getElementById("listtable");
+        var check=document.getElementsByName("c");
+        function move(){
+            
+            var elem= document.getElementById("bar");
+            var width=0;
+            var checked=0;
+            if(check.length==0){
+                width=0;
+            }
+            else{
+            for(var i=0; i<check.length; i++){
+                if(check[i].checked==true)
+                checked++;
+                console.log(checked);
+            }
+            var unit=(1/check.length)*100;
+            width=checked*unit;
+            }
+            elem.style.width=width+'%';
+            document.getElementById("label").innerHTML=Math.ceil(width)*1+'%';
+
+        }
+        function yel(){
+            //데이터 수정
+            var table=document.getElementById("listtable");
+
+            var d=JSON.parse(window.localStorage.getItem(table.clickedRowIndex));
+            console.log(table.clickedRowIndex);
+            if(check[table.clickedRowIndex-1].checked==true){
+                d.checkedlist=true;
+            }
+            else{
+                d.checkedlist=false;
+            }
+            window.localStorage.setItem(table.clickedRowIndex,JSON.stringify(d));
+            move();
+        }
+        //할일 추가
+        function add(){
+            var val=document.getElementById("newadd").value;
+            if(val==""){
+                alert("할 일을 입력해 주세요!");
+            }
+            else{
+            
+            var row=document.createElement("tr");
+            row.onmouseover=function(){table.clickedRowIndex=this.rowIndex};
+            var num=document.createElement("td");
+            var todo=document.createElement("td");
+            var com=document.createElement("td");
+            var rum=table.rows.length;
+            row.draggable="true";
+            row.ondragstart="drag(event)";
+            num.innerHTML=rum;
+            todo.innerHTML=val;
+            com.innerHTML="<input type='checkbox' name='c' onclick='yel();'>";
+            row.appendChild(num);
+            row.appendChild(todo);
+            row.appendChild(com);
+            table.appendChild(row);
+            document.getElementById("newadd").value="";
+            move();
+            //저장
+            var datalist={
+            todo:val,
+            checkedlist:false}
+            }
+            window.localStorage.setItem(rum,JSON.stringify(datalist));
+        }
+        //할일 삭제
+        function del(){
+            //확인창 만들기
+           
+            table.deleteRow(table.clickedRowIndex);
+            //순서
+            for(var ro=table.clickedRowIndex; ro<table.rows.length; ro++ ){
+                table.rows[ro].cells[0].innerHTML=ro;
+            }
+            for(var i=table.clickedRowIndex+1; i<=table.rows.length; i++){
+                var d=window.localStorage.getItem(i);
+                window.localStorage.setItem(i-1,d);
+            }
+            window.localStorage.removeItem(table.rows.length);
+            move();
+        }
+        window.onload=function(){
+            //현재 날짜 표시
+            var date=new Date();
+            var year=date.getFullYear();
+            var month=date.getMonth()+1;
+            var day=date.getDate();
+            var sum=year+'-'+month+'-'+day;
+            document.querySelector("#date").innerHTML=year+'-'+month+'-'+day;
+            if(window.localStorage.length>1){
+                 var da=JSON.parse(window.localStorage.getItem("date"));
+                 if(sum!=da){
+                     window.localStorage.clear();
+                     window.localStorage.setItem("date",JSON.stringify(sum));
+                 }
+                 var s=window.localStorage.length;
+                 var row=0;
+                 var num=0;
+                 var todo=0;
+                 var com=0;
+                 for(var i=1; i<s;i++){
+                     var d= JSON.parse(window.localStorage.getItem(i));
+                     row=document.createElement("tr");
+                     row.onmouseover=function(){table.clickedRowIndex=this.rowIndex};
+                     num=document.createElement("td");
+                     todo=document.createElement("td");
+                     com=document.createElement("td");
+                     row.draggable="true";
+                     row.ondragstart="drag(event)";
+                     num.innerHTML=i;
+                     todo.innerHTML=d.todo;
+                     if(d.checkedlist==false)
+                     com.innerHTML="<input type='checkbox' name='c' onclick='yel();'>";
+                     else
+                     com.innerHTML="<input type='checkbox' name='c' onclick='yel();'checked='checked'>";
+                     row.appendChild(num);
+                     row.appendChild(todo);
+                     row.appendChild(com);
+                     table.appendChild(row);
+                     move();
+                 }
+            }
+            else if(window.localStorage.length){
+                window.localStorage.setItem("date",JSON.stringify(sum));
+            }
+        }
+        </script>
+    </body>
+</html>
